@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INHA MED 족보 퀴즈 v2.7</title>	
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="data/file_list.js"></script>
+</head>
+<body>
+    <div id="app">
+        <section id="home-screen" class="screen active">
+            <div class="home-container">
+                <div class="home-header">
+                    <h1 class="m-0">📚 INHA MED 족보 퀴즈 v2.7</h1>
+                    <div class="theme-switch-wrapper theme-switch-card" title="다크/라이트 테마 전환">
+                        <span class="theme-label text-base">☀️</span>
+                        <label class="theme-switch theme-switch-small" for="theme-toggle-home">
+                            <input type="checkbox" id="theme-toggle-home" class="theme-checkbox" />
+                            <div class="slider round"></div>
+                        </label>
+                        <span class="theme-label text-base">🌙</span>
+                    </div>
+                </div>
+                <p class="home-desc">원하는 과목, 연도, 출제자를 세밀하게 필터링하여 학습하세요.</p>
+                
+                <div class="filter-card">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label for="f-subject">과목 선택</label>
+                            <select id="f-subject"><option value="all">전체 과목</option></select>
+                        </div>
+                        <div class="filter-group">
+                            <label>연도 선택</label>
+                            <div id="f-year-container" class="checkbox-container"></div>
+                        </div>
+                        <div class="filter-group">
+                            <label for="f-examiner">출제자 선택</label>
+                            <select id="f-examiner"><option value="all">모든 출제자</option></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="f-scope">출제 범위</label>
+                            <select id="f-scope"><option value="all">전체 범위</option></select>
+                        </div>
+                    </div>
+                    <hr class="divider">
+                    
+                    <div class="filter-grid mode-grid mb-4">
+                        <div class="filter-group">
+                            <label>앱 모드 선택</label>
+                            <div class="radio-container">
+                                <label><input type="radio" name="appMode" value="quiz" checked> 실전 퀴즈 모드</label>
+                                <label><input type="radio" name="appMode" value="spectator"> 관전(학습) 모드</label>
+                            </div>
+                        </div>
+                        <div class="filter-group hidden" id="spectator-options">
+                            <label>화면 분할 (관전 모드 전용)</label>
+                            <select id="f-split-screen">
+                                <option value="1">1문제씩 보기</option>
+                                <option value="2">2문제씩 보기 (좌우)</option>
+                                <option value="4">4문제씩 보기 (그리드)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-grid mode-grid">
+                        <div class="filter-group">
+                            <label>풀이 순서</label>
+                            <div class="radio-container">
+                                <label><input type="radio" name="playMode" value="sequential" checked> 순서대로 풀기</label>
+                                <label><input type="radio" name="playMode" value="shuffle"> 랜덤 섞기</label>
+                            </div>
+                        </div>
+                        <div class="filter-group highlight-group">
+                            <label><input type="checkbox" id="f-is-incorrect-note"> 📝 오답 노트 모드로 풀기</label>
+                            <select id="f-error-rate" disabled>
+                                <option value="0">1번이라도 틀린 문제 전체</option>
+                                <option value="50">오답률 50% 이상</option>
+                                <option value="70">오답률 70% 이상</option>
+                                <option value="100">오답률 100% (항상 틀린 문제)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p id="live-question-count" class="live-count-text">동적 데이터 준비 중...</p>
+                    <button id="btn-start-quiz" class="btn-large">🚀 조건에 맞는 퀴즈 시작</button>
+                </div>
+                <div class="action-buttons">
+                    <button id="btn-dashboard" class="btn-secondary">📊 누적 기록 보기</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="quiz-screen" class="screen">
+            <header class="quiz-header">
+                <div class="quiz-header-title">
+                    <h2 id="quiz-title">과목명</h2>
+                    <button id="btn-vent-chat" class="btn-icon btn-vent" title="스트레스 해소용 휘발성 채팅">💬 화풀이</button>
+                </div>
+                <div class="header-controls">
+                    <div class="theme-switch-wrapper" title="다크/라이트 테마 전환">
+                        <span class="theme-label text-sm">☀️</span>
+                        <label class="theme-switch theme-switch-small" for="theme-toggle-quiz">
+                            <input type="checkbox" id="theme-toggle-quiz" class="theme-checkbox" />
+                            <div class="slider round"></div>
+                        </label>
+                        <span class="theme-label text-sm">🌙</span>
+                    </div>
+
+                    <div class="font-size-controls" id="font-size-controls">
+                        <button class="btn-font" data-size="small" title="글씨 작게">가</button>
+                        <button class="btn-font active" data-size="default" title="글씨 기본">가</button>
+                        <button class="btn-font" data-size="large" title="글씨 크게">가</button>
+                    </div>
+                    <button id="btn-exit-quiz" class="btn-text">나가기</button>
+                </div>
+            </header>
+            
+            <div class="split-container" id="quiz-split-container">
+                <div class="left-pane" id="left-pane">
+                    <div class="question-header">
+                        <div>
+                            <span id="q-number" class="badge">Q. 1</span>
+                            <span id="q-multi-badge" class="badge hidden" style="background-color: #8b5cf6; margin-left: 8px;">복수정답</span>
+                        </div>
+                    </div>
+                    <div id="q-text" class="question-text"></div>
+                    <div id="q-image-container" class="image-container"></div>
+                    <div id="options-container" class="options-container"></div>
+                    
+                    <!-- 복수정답 제어 버튼 -->
+                    <button id="btn-check-multi-answer" class="btn-large btn-multi-check hidden" style="margin-top: 1.5rem;">정답 확인 🧐</button>
+                </div>
+                
+                <div id="pane-resizer" class="resizer"></div>
+
+                <div class="right-pane" id="right-pane">
+                    <div id="explanation-content" class="explanation-content hidden">
+                        <div class="result-badge" id="result-badge"></div>
+                        <h3 class="answer-text">정답: <span id="a-text"></span></h3>
+                        
+                        <!-- [v2.5] 메타 정보 패널에 과목명, 연도 추가 -->
+                        <div class="meta-info" id="meta-info-container">
+                            <span class="meta-tag"><strong>과목:</strong> <span id="e-subject"></span></span>
+                            <span class="meta-tag"><strong>연도:</strong> <span id="e-year"></span></span>
+                            <span class="meta-tag"><strong>출제자:</strong> <span id="e-examiner"></span></span>
+                            <span class="meta-tag"><strong>범위:</strong> <span id="e-scope"></span></span>
+                        </div>
+                        
+                        <div id="e-text" class="explanation-text"></div>
+                        <div id="e-image-container" class="image-container"></div>
+                    </div>
+                    <div id="explanation-placeholder" class="placeholder">
+                        <p>💡 선지를 선택하면 해설이 표시됩니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="spectator-multi-container" class="multi-container hidden"></div>
+
+            <footer class="bottom-nav">
+                <button id="btn-prev" class="btn-nav">⬅ 이전</button>
+                <div class="nav-center-controls" id="nav-center-controls">
+                    <button id="btn-bookmark" class="btn-icon" title="북마크">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </button>
+                    <button id="btn-palette" class="btn-progress" title="문제 팔레트 열기">Q.1 / 전체 25문항</button>
+                    <button id="btn-memo" class="btn-icon" title="메모장 열기">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <button id="btn-next" class="btn-nav btn-primary-nav">다음 ➡</button>
+            </footer>
+        </section>
+
+        <section id="result-screen" class="screen">
+            <div class="result-container">
+                <h2>🎉 완료!</h2>
+                <div class="score-summary">
+                    <div class="score-card">
+                        <h3>최종 정답률</h3>
+                        <p id="total-score" class="score-text">0%</p>
+                    </div>
+                </div>
+                <div class="weak-points">
+                    <div class="stat-grid stat-grid-3">
+                        <div class="stat-section">
+                            <h3>👨‍🏫 출제자별 정답률</h3>
+                            <table class="weak-table">
+                                <thead><tr><th>출제자</th><th>정답률</th></tr></thead>
+                                <tbody id="weak-examiner-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div class="stat-section">
+                            <h3>🎯 출제 범위별 정답률</h3>
+                            <table class="weak-table">
+                                <thead><tr><th>출제 범위</th><th>정답률</th></tr></thead>
+                                <tbody id="weak-scope-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div class="stat-section">
+                            <h3>📑 문항별 정답률</h3>
+                            <table class="weak-table">
+                                <thead><tr><th>문제</th><th>정답률</th></tr></thead>
+                                <tbody id="weak-qstats-tbody">
+                                    <tr><td colspan="2" class="text-center">데이터를 불러오는 중입니다.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-go-home" class="btn-fab" title="홈으로 돌아가기">🏠 홈으로</button>
+            </div>
+        </section>
+
+        <section id="dashboard-screen" class="screen">
+            <div class="result-container">
+                <h2>📊 학습 데이터 대시보드</h2>
+                <div class="dashboard-tabs">
+                    <button class="dash-tab active" data-target="view-cumulative">누적 기록</button>
+                    <button class="dash-tab" data-target="view-session">회차별 풀이 기록</button>
+                </div>
+                <div id="view-cumulative" class="dash-view active">
+                    <div class="dash-filter">
+                        <select id="d-subject"><option value="all">전체 과목</option></select>
+                        <select id="d-year"><option value="all">전체 연도</option></select>
+                        <select id="d-examiner"><option value="all">모든 출제자</option></select>
+                        <select id="d-scope"><option value="all">전체 범위</option></select>
+                    </div>
+                    <div class="score-summary">
+                        <div class="score-card">
+                            <h3>누적 전체 정답률</h3>
+                            <p id="dashboard-total-score" class="score-text">0%</p>
+                        </div>
+                    </div>
+                    <div class="weak-points">
+                        <div class="stat-grid stat-grid-3">
+                            <div class="stat-section">
+                                <h3>👨‍🏫 누적 출제자별 순위</h3>
+                                <table class="weak-table">
+                                    <thead><tr><th>출제자</th><th>정답률</th></tr></thead>
+                                    <tbody id="dashboard-examiner-tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="stat-section">
+                                <h3>🎯 누적 출제 범위별 순위</h3>
+                                <table class="weak-table">
+                                    <thead><tr><th>출제 범위</th><th>정답률</th></tr></thead>
+                                    <tbody id="dashboard-scope-tbody"></tbody>
+                                </table>
+                            </div>
+                            <div class="stat-section">
+                                <h3>📑 문제별 정답률 순위표</h3>
+                                <table class="weak-table">
+                                    <thead><tr><th>문제 번호</th><th>정답률</th></tr></thead>
+                                    <tbody id="dashboard-qstats-tbody">
+                                        <tr><td colspan="2" class="text-center">데이터를 불러오는 중입니다.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-session" class="dash-view hidden">
+                    <div class="session-history-section">
+                        <table class="weak-table">
+                            <thead><tr><th>풀이 일시 (회차)</th><th>과목</th><th>정답률</th></tr></thead>
+                            <tbody id="dashboard-session-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <button id="btn-dash-home" class="btn-fab" title="홈으로 돌아가기">🏠 홈으로</button>
+            </div>
+        </section>
+
+        <div id="memo-modal" class="draggable-modal hidden">
+            <div class="draggable-header" id="memo-header">
+                <span id="memo-title">📝 메모장</span>
+                <button id="btn-close-memo" class="btn-modal-close">&times;</button>
+            </div>
+            <div class="draggable-body">
+                <textarea id="memo-textarea" placeholder="이 문제에 대한 메모를 자유롭게 남겨보세요. 브라우저에 영구 저장됩니다."></textarea>
+                <div class="memo-footer">
+                    <button id="btn-save-memo" class="btn-secondary btn-sm">저장</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-modal" class="custom-modal hidden" style="z-index: 4000;">
+            <div class="chat-modal-content">
+                <div class="chat-header">
+                    <span id="chat-professor-name">ㅇㅇㅇ 교수</span>
+                    <button id="btn-close-chat" class="btn-modal-close float-right">&times;</button>
+                </div>
+                <div class="chat-body" id="chat-body">
+                    <div class="chat-notice">스트레스 해소용 화풀이 방입니다.<br>창을 닫으면 완전히 사라집니다.</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="하고 싶은 말을 시원하게 입력하세요..." autocomplete="off">
+                    <button id="btn-send-chat">전송</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="session-detail-modal" class="custom-modal hidden">
+            <div class="custom-modal-content palette-modal-content">
+                <div class="modal-header-flex">
+                    <h3 id="session-detail-title" class="modal-title">회차 상세 결과</h3>
+                    <button id="btn-close-session-detail" class="btn-modal-close-large">&times;</button>
+                </div>
+                <div id="session-detail-grid" class="palette-grid"></div>
+                <!-- 오답노트 연동 버튼 -->
+                <button id="btn-retake-incorrect" class="btn-large btn-retake hidden">❌ 틀린 문제만 다시 풀기</button>
+            </div>
+        </div>
+
+        <div id="confirm-modal" class="custom-modal hidden">
+            <div class="custom-modal-content warning-modal">
+                <h3 class="warning-title">⚠️ 미풀이 문제 경고</h3>
+                <p id="confirm-msg" class="warning-msg"></p>
+                <div class="warning-actions">
+                    <button id="btn-confirm-no" class="btn-secondary">아니오 (풀이로 돌아가기)</button>
+                    <button id="btn-confirm-yes" class="btn-primary btn-confirm">예 (그대로 제출)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="palette-modal" class="custom-modal hidden">
+            <div class="custom-modal-content palette-modal-content">
+                <div class="modal-header-flex">
+                    <h3 class="modal-title" id="palette-modal-title">전체 문제 이동</h3>
+                    <button id="btn-close-palette" class="btn-modal-close-large">&times;</button>
+                </div>
+                <div class="palette-legend">
+                    <span class="legend-item"><div class="legend-box"></div>미해결</span>
+                    <span class="legend-item"><div class="legend-solved-box"></div>해결됨</span>
+                </div>
+                <div id="palette-grid" class="palette-grid"></div>
+                <button id="btn-submit-early" class="btn-large submit-palette-btn">📊 최종 결과 보기 (제출)</button>
+            </div>
+        </div>
+
+        <div id="image-modal" class="image-modal hidden">
+            <div id="modal-img-wrapper" class="modal-img-wrapper">
+                <img id="modal-img" src="" alt="원본 이미지 확대">
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
