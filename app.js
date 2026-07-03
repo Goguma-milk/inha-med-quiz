@@ -24,6 +24,17 @@ let currentViewedDisplayIndex = null;
 // 전역 고유 식별자 생성기 (과목_연도_고유ID)
 const getQKey = (q) => `${q.originSubject}_${q.originYear}_${q.id}`;
 
+// [v3.0 추가] 파이어베이스 초기화 및 유저 상태
+const firebaseConfig = {
+    // 실제 서비스 배포 시 본인의 Firebase 프로젝트 설정으로 변경하세요
+    apiKey: "AIzaSyCG-CrGQsFNgfqTMDnmwCEzbbCyJmwZknM",
+    authDomain: "inha-med-quiz.firebaseapp.com",
+    projectId: "inha-med-quiz"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const dbFirestore = firebase.firestore();
+let currentUser = null; // null이면 게스트 모드
+
 // --- IndexedDB 초기화 ---
 let db;
 const dbRequest = indexedDB.open("MedicalQuizDB", 1);
@@ -36,6 +47,7 @@ dbRequest.onerror = (e) => { console.error("IndexedDB 연결 에러", e); };
 
 // --- DOM 캐싱 ---
 const screens = {
+    login: document.getElementById('login-screen'), // [v3.0 추가]
     home: document.getElementById('home-screen'),
     quiz: document.getElementById('quiz-screen'),
     result: document.getElementById('result-screen'),
@@ -43,6 +55,15 @@ const screens = {
 };
 
 const dom = {
+    // [v3.0 추가] 로그인 관련 DOM
+    loginUsername: document.getElementById('login-username'),
+    loginPassword: document.getElementById('login-password'),
+    loginIsNew: document.getElementById('login-is-new'),
+    btnLoginSubmit: document.getElementById('btn-login-submit'),
+    btnLoginGuest: document.getElementById('btn-login-guest'),
+    headerUsername: document.getElementById('header-username'),
+    // ... 이하 기존 dom 속성 유지 ...
+    
     appContainer: document.getElementById('app'),
     themeToggles: document.querySelectorAll('.theme-checkbox'), 
     appModeRadios: document.querySelectorAll('input[name="appMode"]'), 
@@ -142,7 +163,14 @@ const dom = {
 
 // --- 유틸리티 함수 ---
 const getHistory = () => JSON.parse(localStorage.getItem('medicalQuizHistory') || '[]');
-const saveHistory = (data) => localStorage.setItem('medicalQuizHistory', JSON.stringify(data));
+// [v3.0 수정] 게스트면 로컬, 로그인 상태면 로컬+파이어베이스 동시 저장
+const saveHistory = (data) => {
+    localStorage.setItem('medicalQuizHistory', JSON.stringify(data));
+    if (currentUser) {
+        dbFirestore.collection('users').doc(currentUser).set({ history: data }, { merge: true })
+            .catch(e => console.error("Firebase History 동기화 실패:", e));
+    }
+};
 const calcRate = (correct, total) => total === 0 ? 0 : Math.round((correct / total) * 100);
 
 function cleanHTML(htmlString) {
@@ -1130,6 +1158,50 @@ function openMemoModal(qIndex) {
 
 // 모든 이벤트 리스너에 방어적 null 체크 적용 (HTML 구조 불일치 시 JS 먹통 방지)
 function setupEventListeners() {
+    // [v3.0 추가] 로그인 로직 및 유효성 검사
+    const handleLogin = async () => {
+        const username = dom.loginUsername.value.trim();
+        const password = dom.loginPassword.value.trim();
+        const isNew = dom.loginIsNew.checked;
+
+        if (!/^[가-힣a-zA-Z]{1,10}$/.test(username)) {
+            alert("사용자 이름은 10글자 이내의 띄어쓰기 없는 한글/영어만 가능합니다."); return;
+        }
+        if (!/^\d{4}$/.test(password)) {
+            alert("패스워드는 4자리 숫자여야 합니다."); return;
+        }
+
+        const docId = `${username}_${password}`;
+        const userRef = dbFirestore.collection('users').doc(docId);
+
+        try {
+            const docSnap = await userRef.get();
+            if (isNew) {
+                if (docSnap.exists) { alert("이미 존재하는 계정입니다."); return; }
+                await userRef.set({ username, createdAt: new Date().toISOString(), history: [] });
+                alert("가입 및 로그인 성공!");
+            } else {
+                if (!docSnap.exists) { alert("아이디 or 패스워드를 확인해주세요"); return; }
+                // 기존 데이터 로컬에 동기화
+                const data = docSnap.data();
+                if (data.history) localStorage.setItem('medicalQuizHistory', JSON.stringify(data.history));
+            }
+            
+            currentUser = docId;
+            dom.headerUsername.textContent = username;
+            switchScreen('home');
+        } catch (e) {
+            console.error(e); alert("서버 통신 에러가 발생했습니다.");
+        }
+    };
+
+    if (dom.btnLoginSubmit) dom.btnLoginSubmit.onclick = handleLogin;
+    if (dom.btnLoginGuest) dom.btnLoginGuest.onclick = () => {
+        currentUser = null;
+        dom.headerUsername.textContent = "게스트";
+        switchScreen('home');
+    };
+    
     dom.appModeRadios?.forEach(radio => radio.addEventListener('change', (e) => dom.spectatorOptions?.classList.toggle('hidden', e.target.value !== 'spectator')));
     
     // [v2.8 수정] 과목 선택 시 하위 필터 재생성 이벤트 분리 연동

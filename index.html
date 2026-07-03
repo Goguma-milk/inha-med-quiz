@@ -3,17 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INHA MED 족보 퀴즈 v2.8</title>	
+    <title>INHA MED 족보 퀴즈 v3.0</title>
     <link rel="stylesheet" href="style.css">
     
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <script src="data/file_list.js"></script>
 </head>
 <body>
     <div id="app">
-        <section id="home-screen" class="screen active">
+        <section id="login-screen" class="screen active">
+            <div class="home-container" style="max-width: 400px; margin-top: 10vh;">
+                <h1 class="m-0" style="color: var(--primary); margin-bottom: 2rem;">📚 INHA MED v3.0</h1>
+                
+                <div class="filter-group" style="margin-bottom: 1rem;">
+                    <label for="login-username">사용자 이름</label>
+                    <input type="text" id="login-username" placeholder="이름 입력" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">* 10글자 이내, 띄어쓰기 없는 한글/영어만 가능</span>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="login-password">패스워드</label>
+                    <input type="password" id="login-password" placeholder="비밀번호 4자리" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">* 4자리 숫자 고정</span>
+                </div>
+                
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem; cursor: pointer;">
+                    <input type="checkbox" id="login-is-new"> 신규가입
+                </label>
+                
+                <button id="btn-login-submit" class="btn-large" style="margin-top: 1rem;">로그인</button>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="btn-login-guest" class="btn-text">게스트로 이용</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="home-screen" class="screen">
             <div class="home-container">
                 <div class="home-header">
-                    <h1 class="m-0">📚 INHA MED 족보 퀴즈 v2.8</h1>
+                    <div>
+                        <span id="header-username" class="badge" style="background-color: #8b5cf6; margin-right: 10px;">게스트</span>
+                        <h1 class="m-0" style="display: inline-block;">📚 INHA MED 족보 퀴즈 v3.0</h1>
+                    </div>
                     <div class="theme-switch-wrapper theme-switch-card" title="다크/라이트 테마 전환">
                         <span class="theme-label text-base">☀️</span>
                         <label class="theme-switch theme-switch-small" for="theme-toggle-home">
