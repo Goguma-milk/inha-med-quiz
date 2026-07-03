@@ -273,12 +273,32 @@ function initTheme() {
     });
 }
 
+// [v2.8 수정] 과목 종속형(Cascading) 필터 렌더링 로직 추가
 function populateHomeFilters() {
     if (allQuizData.length === 0) return;
-    const subjects = new Set(), years = new Set(), examiners = new Set(), scopes = new Set();
+    const subjects = new Set();
+
+    allQuizData.forEach(quiz => subjects.add(quiz.metadata.subject));
+
+    if (dom.fSubject) dom.fSubject.innerHTML = '<option value="all">전체 과목</option>';
+    if (dom.dSubject) dom.dSubject.innerHTML = '<option value="all">전체 과목</option>';
+
+    subjects.forEach(subj => {
+        if (dom.fSubject) dom.fSubject.appendChild(new Option(subj, subj));
+        if (dom.dSubject) dom.dSubject.appendChild(new Option(subj, subj));
+    });
+
+    updateDependentHomeFilters();
+    updateDependentDashFilters();
+}
+
+function updateDependentHomeFilters() {
+    if (allQuizData.length === 0) return;
+    const selectedSubject = dom.fSubject ? dom.fSubject.value : 'all';
+    const years = new Set(), examiners = new Set(), scopes = new Set();
 
     allQuizData.forEach(quiz => {
-        subjects.add(quiz.metadata.subject);
+        if (selectedSubject !== 'all' && quiz.metadata.subject !== selectedSubject) return;
         years.add(quiz.metadata.year);
         quiz.questions.forEach(q => {
             if (q.examiner) examiners.add(q.examiner);
@@ -286,30 +306,51 @@ function populateHomeFilters() {
         });
     });
 
-    subjects.forEach(subj => {
-        if (dom.fSubject) dom.fSubject.appendChild(new Option(subj, subj));
-        if (dom.dSubject) dom.dSubject.appendChild(new Option(subj, subj));
-    });
-    
     if (dom.fYearContainer) dom.fYearContainer.innerHTML = '';
     [...years].sort((a, b) => b - a).forEach(year => {
         const label = document.createElement('label');
         label.innerHTML = `<input type="checkbox" name="fYear" value="${year}" checked> ${year}년`;
         if (dom.fYearContainer) dom.fYearContainer.appendChild(label);
-        if (dom.dYear) dom.dYear.appendChild(new Option(`${year}년`, year));
     });
 
-    const sortFn = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    [...examiners].sort(sortFn).forEach(ex => { 
-        if (dom.fExaminer) dom.fExaminer.appendChild(new Option(ex, ex)); 
-        if (dom.dExaminer) dom.dExaminer.appendChild(new Option(ex, ex)); 
-    });
-    [...scopes].sort(sortFn).forEach(sc => { 
-        if (dom.fScope) dom.fScope.appendChild(new Option(sc, sc)); 
-        if (dom.dScope) dom.dScope.appendChild(new Option(sc, sc)); 
-    });
+    if (dom.fExaminer) {
+        dom.fExaminer.innerHTML = '<option value="all">모든 출제자</option>';
+        [...examiners].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(ex => dom.fExaminer.appendChild(new Option(ex, ex)));
+    }
+    if (dom.fScope) {
+        dom.fScope.innerHTML = '<option value="all">전체 범위</option>';
+        [...scopes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(sc => dom.fScope.appendChild(new Option(sc, sc)));
+    }
 
     document.querySelectorAll('input[name="fYear"]').forEach(cb => cb.addEventListener('change', updateLiveCount));
+}
+
+function updateDependentDashFilters() {
+    if (allQuizData.length === 0) return;
+    const selectedSubject = dom.dSubject ? dom.dSubject.value : 'all';
+    const years = new Set(), examiners = new Set(), scopes = new Set();
+
+    allQuizData.forEach(quiz => {
+        if (selectedSubject !== 'all' && quiz.metadata.subject !== selectedSubject) return;
+        years.add(quiz.metadata.year);
+        quiz.questions.forEach(q => {
+            if (q.examiner) examiners.add(q.examiner);
+            if (q.scope) scopes.add(q.scope);
+        });
+    });
+
+    if (dom.dYear) {
+        dom.dYear.innerHTML = '<option value="all">전체 연도</option>';
+        [...years].sort((a, b) => b - a).forEach(year => dom.dYear.appendChild(new Option(`${year}년`, year)));
+    }
+    if (dom.dExaminer) {
+        dom.dExaminer.innerHTML = '<option value="all">모든 출제자</option>';
+        [...examiners].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(ex => dom.dExaminer.appendChild(new Option(ex, ex)));
+    }
+    if (dom.dScope) {
+        dom.dScope.innerHTML = '<option value="all">전체 범위</option>';
+        [...scopes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(sc => dom.dScope.appendChild(new Option(sc, sc)));
+    }
 }
 
 function extractQuestionsByFilters() {
@@ -1090,7 +1131,14 @@ function openMemoModal(qIndex) {
 // 모든 이벤트 리스너에 방어적 null 체크 적용 (HTML 구조 불일치 시 JS 먹통 방지)
 function setupEventListeners() {
     dom.appModeRadios?.forEach(radio => radio.addEventListener('change', (e) => dom.spectatorOptions?.classList.toggle('hidden', e.target.value !== 'spectator')));
-    [dom.fSubject, dom.fExaminer, dom.fScope, dom.fErrorRate].forEach(el => el?.addEventListener('change', updateLiveCount));
+    
+    // [v2.8 수정] 과목 선택 시 하위 필터 재생성 이벤트 분리 연동
+    [dom.fExaminer, dom.fScope, dom.fErrorRate].forEach(el => el?.addEventListener('change', updateLiveCount));
+    dom.fSubject?.addEventListener('change', () => {
+        updateDependentHomeFilters();
+        updateLiveCount();
+    });
+
     if (dom.fIsIncorrectNote) dom.fIsIncorrectNote.addEventListener('change', (e) => { if(dom.fErrorRate) dom.fErrorRate.disabled = !e.target.checked; updateLiveCount(); });
     
     if (dom.btnStartQuiz) dom.btnStartQuiz.onclick = startQuiz;
@@ -1154,7 +1202,12 @@ function setupEventListeners() {
         };
     });
     
-    [dom.dSubject, dom.dYear, dom.dExaminer, dom.dScope].forEach(el => el?.addEventListener('change', renderDashboardStats));
+    // [v2.8 수정] 대시보드 과목 선택 시 하위 필터 재생성 이벤트 분리 연동
+    [dom.dYear, dom.dExaminer, dom.dScope].forEach(el => el?.addEventListener('change', renderDashboardStats));
+    dom.dSubject?.addEventListener('change', () => {
+        updateDependentDashFilters();
+        renderDashboardStats();
+    });
 
     dom.fontSizeBtns?.forEach(btn => {
         btn.onclick = (e) => {

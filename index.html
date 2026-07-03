@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INHA MED 족보 퀴즈 v2.7</title>	
+    <title>INHA MED 족보 퀴즈 v2.8</title>	
     <link rel="stylesheet" href="style.css">
     
     <script src="data/file_list.js"></script>
@@ -13,7 +13,7 @@
         <section id="home-screen" class="screen active">
             <div class="home-container">
                 <div class="home-header">
-                    <h1 class="m-0">📚 INHA MED 족보 퀴즈 v2.7</h1>
+                    <h1 class="m-0">📚 INHA MED 족보 퀴즈 v2.8</h1>
                     <div class="theme-switch-wrapper theme-switch-card" title="다크/라이트 테마 전환">
                         <span class="theme-label text-base">☀️</span>
                         <label class="theme-switch theme-switch-small" for="theme-toggle-home">
@@ -225,13 +225,14 @@
                     <button class="dash-tab active" data-target="view-cumulative">누적 기록</button>
                     <button class="dash-tab" data-target="view-session">회차별 풀이 기록</button>
                 </div>
+                <div class="dash-filter">
+                    <select id="d-subject"><option value="all">전체 과목</option></select>
+                    <select id="d-year"><option value="all">전체 연도</option></select>
+                    <select id="d-examiner"><option value="all">모든 출제자</option></select>
+                    <select id="d-scope"><option value="all">전체 범위</option></select>
+                </div>
+                
                 <div id="view-cumulative" class="dash-view active">
-                    <div class="dash-filter">
-                        <select id="d-subject"><option value="all">전체 과목</option></select>
-                        <select id="d-year"><option value="all">전체 연도</option></select>
-                        <select id="d-examiner"><option value="all">모든 출제자</option></select>
-                        <select id="d-scope"><option value="all">전체 범위</option></select>
-                    </div>
                     <div class="score-summary">
                         <div class="score-card">
                             <h3>누적 전체 정답률</h3>
