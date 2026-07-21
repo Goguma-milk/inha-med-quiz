@@ -1224,6 +1224,12 @@ function setupEventListeners() {
     };
 
     if (dom.btnLoginSubmit) dom.btnLoginSubmit.onclick = handleLogin;
+
+    // [엔터키 로그인 기능 추가] 입력창에서 Enter 누르면 handleLogin 실행
+    const triggerLoginOnEnter = (e) => { if (e.key === 'Enter') handleLogin(); };
+    if (dom.loginUsername) dom.loginUsername.onkeypress = triggerLoginOnEnter;
+    if (dom.loginPassword) dom.loginPassword.onkeypress = triggerLoginOnEnter;
+
     if (dom.btnLoginGuest) dom.btnLoginGuest.onclick = () => {
         currentUser = null;
         dom.headerUsername.textContent = "게스트";
