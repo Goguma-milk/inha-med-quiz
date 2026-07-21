@@ -1,5 +1,5 @@
 // =================================================================
-// INHA MED 족보 퀴즈 v2.6 - 진행도 UI 변경, 모달 고정, 이미지 패닝 등 UX 개선
+// INHA MED 족보 퀴즈
 // =================================================================
 
 const allQuizData = [];
@@ -158,7 +158,13 @@ const dom = {
     memoTitle: document.getElementById('memo-title'),
     btnCloseMemo: document.getElementById('btn-close-memo'),
     memoTextarea: document.getElementById('memo-textarea'),
-    btnSaveMemo: document.getElementById('btn-save-memo')
+    btnSaveMemo: document.getElementById('btn-save-memo'),
+
+    // [v3.2 추가] 패치노트 DOM
+    btnOpenPatchnote: document.getElementById('btn-open-patchnote'),
+    patchnoteModal: document.getElementById('patchnote-modal'),
+    btnClosePatchnote: document.getElementById('btn-close-patchnote'),
+    patchnoteContent: document.getElementById('patchnote-content')
 };
 
 // --- 유틸리티 함수 ---
@@ -330,7 +336,10 @@ function updateDependentHomeFilters() {
         years.add(quiz.metadata.year);
         quiz.questions.forEach(q => {
             if (q.examiner) examiners.add(q.examiner);
-            if (q.scope) scopes.add(q.scope);
+            // [v3.1 수정] 여러 범위가 섞여 있으면 파이프(|)로 쪼개어 각각 옵션으로 추가
+            if (q.scope) {
+                q.scope.split('|').forEach(s => scopes.add(s.trim()));
+            }
         });
     });
 
@@ -363,7 +372,10 @@ function updateDependentDashFilters() {
         years.add(quiz.metadata.year);
         quiz.questions.forEach(q => {
             if (q.examiner) examiners.add(q.examiner);
-            if (q.scope) scopes.add(q.scope);
+            // [v3.1 수정] 여러 범위가 섞여 있으면 파이프(|)로 쪼개어 각각 옵션으로 추가
+            if (q.scope) {
+                q.scope.split('|').forEach(s => scopes.add(s.trim()));
+            }
         });
     });
 
@@ -407,7 +419,8 @@ function extractQuestionsByFilters() {
 
         return quiz.questions.filter(q => {
             if (targetExaminer !== 'all' && q.examiner !== targetExaminer) return false;
-            if (targetScope !== 'all' && q.scope !== targetScope) return false;
+            // [v3.1 수정] 단일 일치(===)에서 포함(includes) 조건으로 유연하게 필터링
+            if (targetScope !== 'all' && (!q.scope || !q.scope.includes(targetScope))) return false;
 
             if (isIncorrectMode) {
                 const key = `${quiz.metadata.subject}_${quiz.metadata.year}_${q.id}`;
@@ -603,6 +616,16 @@ function renderQuestion() {
 
     // [v2.6.1 수정] 하단 진행도 텍스트 간소화
     if (dom.btnPalette) dom.btnPalette.textContent = `${currentQuestionIndex + 1}/${currentFilteredQuestions.length}`;
+
+    // [v3.1 수정] 단일 모드 원본 PDF 팝업 로직 (page_number 변수 적용)
+// [v3.2 수정] 팝업 창 재사용 및 페이지 강제 이동 버그 해결 (더미 쿼리 추가)
+    const btnPdf = document.getElementById('btn-view-pdf');
+    if (btnPdf) {
+        btnPdf.onclick = () => {
+            const pdfUrl = `./족보원본/${q.originYear}_${q.originSubject}.pdf?reload=${Date.now()}#page=${q.page_number || 1}`;
+            window.open(pdfUrl, 'PDFViewerWindow', 'width=800,height=1000');
+        };
+    }
 }
 
 function renderMultiSpectatorView() {
@@ -640,9 +663,13 @@ function renderMultiSpectatorView() {
             </div>
         `;
         
-        html += `<div style="margin-bottom:1rem;">
-                    <span class="badge">Q. ${q.id}</span>
-                    ${isMulti ? '<span class="badge" style="background-color: #8b5cf6; margin-left: 8px;">복수정답</span>' : ''}
+        // [v3.1 수정] 다중 모드 카드 상단에도 PDF 버튼 렌더링
+        html += `<div style="margin-bottom:1rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <span class="badge">Q. ${q.id}</span>
+                        ${isMulti ? '<span class="badge" style="background-color: #8b5cf6; margin-left: 8px;">복수정답</span>' : ''}
+                    </div>
+                    <button class="btn-slot-action btn-view-pdf-slot" data-slot="${slotDivIndex}">📄 원본 PDF</button>
                  </div>`;
         html += `<div class="question-text">${cleanHTML(q.question_text)}</div>`;
         card.innerHTML = html;
@@ -669,7 +696,7 @@ function renderMultiSpectatorView() {
                 <span class="meta-tag"><strong>과목:</strong> ${q.originSubject || '미지정'}</span>
                 <span class="meta-tag"><strong>연도:</strong> ${q.originYear ? q.originYear + '년' : '미지정'}</span>
                 <span class="meta-tag"><strong>출제자:</strong> ${q.examiner||'미지정'}</span>
-                <span class="meta-tag"><strong>범위:</strong> ${q.scope||'미지정'}</span>
+                <span class="meta-tag"><strong>범위:</strong> ${q.scope ? q.scope.replace(/\|/g, ', ') : '미지정'}</span>
             </div>`;
 
         if (Array.isArray(q.explanation)) {
@@ -802,7 +829,8 @@ function showExplanation(isCorrect, overrideQ = null) {
     if (dom.eSubject) dom.eSubject.textContent = q.originSubject || '미지정';
     if (dom.eYear) dom.eYear.textContent = q.originYear ? `${q.originYear}년` : '미지정';
     if (dom.eExaminer) dom.eExaminer.textContent = q.examiner || '미지정';
-    if (dom.eScope) dom.eScope.textContent = q.scope || '미지정';
+    // [v3.1 수정] 화면 출력 시 파이프(|) 기호를 쉼표(, )로 예쁘게 치환
+    if (dom.eScope) dom.eScope.textContent = q.scope ? q.scope.replace(/\|/g, ', ') : '미지정';
     
     if (dom.eText) dom.eText.innerHTML = ''; 
     if (dom.eImageContainer) dom.eImageContainer.innerHTML = '';
@@ -1433,6 +1461,19 @@ function setupEventListeners() {
                 openChatModal(currentSlotIndices[slotIndex]);
                 return;
             }
+
+            // [v3.1 수정] 다중 관전 모드 원본 PDF 팝업 이벤트 (page_number 변수 적용)
+// [v3.2 수정] 팝업 창 재사용 및 페이지 강제 이동 버그 해결 (더미 쿼리 추가)
+            const btnViewPdf = e.target.closest('.btn-view-pdf-slot');
+            if (btnViewPdf) {
+                const slotIndex = parseInt(btnViewPdf.dataset.slot);
+                const targetQ = currentFilteredQuestions[currentSlotIndices[slotIndex]];
+                if (targetQ) {
+                    const pdfUrl = `./족보원본/${targetQ.originYear}_${targetQ.originSubject}.pdf?reload=${Date.now()}#page=${targetQ.page_number || 1}`;
+                    window.open(pdfUrl, 'PDFViewerWindow', 'width=800,height=1000');
+                }
+                return;
+            }
         });
     }
 
@@ -1463,6 +1504,19 @@ function setupEventListeners() {
             tx.oncomplete = () => { originalMemoText = dom.memoTextarea.value; alert('해당 문제의 메모가 브라우저에 영구 저장되었습니다!'); };
         }
     };
+
+    // [v3.2 추가] 패치노트 모달 열기/닫기 로직
+    if (dom.btnOpenPatchnote) {
+        dom.btnOpenPatchnote.onclick = () => {
+            if (dom.patchnoteContent) {
+                dom.patchnoteContent.innerHTML = typeof PATCHNOTE_DATA !== 'undefined' ? PATCHNOTE_DATA : '패치노트 데이터가 없습니다.';
+            }
+            dom.patchnoteModal?.classList.remove('hidden');
+        };
+    }
+    if (dom.btnClosePatchnote) {
+        dom.btnClosePatchnote.onclick = () => dom.patchnoteModal?.classList.add('hidden');
+    }
 }
 
 loadQuizData();

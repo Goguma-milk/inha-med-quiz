@@ -344,3 +344,13 @@ input:checked + .slider:before { transform: translateX(24px); }
 #app.compact-ui #btn-vent-chat {
     display: none !important;
 }
+
+/* [v3.2 추가 및 수정] 패치노트는 로그인/홈 화면에서만 노출 (이전 버튼 겹침 방지) */
+.side-menu-left { display: none; position: fixed; left: 20px; bottom: 20px; flex-direction: column; gap: 10px; z-index: 1000; }
+#login-screen.active ~ .side-menu-left, #home-screen.active ~ .side-menu-left { display: flex; }
+
+.btn-side { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main); padding: 0.75rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+.btn-side:hover { background: var(--primary); color: white; border-color: var(--primary); transform: translateX(5px); }
+
+.modal-body-scroll { max-height: 60vh; overflow-y: auto; line-height: 1.6; font-size: 0.95rem; }
+.modal-body-scroll img { max-width: 100%; border-radius: 8px; margin: 1rem 0; border: 1px solid var(--border); }
