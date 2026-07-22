@@ -1,5 +1,11 @@
 const PATCHNOTE_DATA = `
 <div class="patchnote-container">
+    <h3>✨ [v3.3.1]</h3>
+    <ul>
+        <li>정신계 2025 일부 문항 정답, 출제자, 출제범위 정보 추가 (내 마음대로 단거라 틀릴수도 있음, 향후에도 추가 예정)</li>
+    </ul>
+    <hr>
+
     <h3>✨ [v3.3]</h3>
     <ul>
         <li>태블릿 환경 반응형 UI 최적화 (화면 잘림 및 스크롤 현상 개선)</li>
