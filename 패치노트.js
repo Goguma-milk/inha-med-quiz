@@ -2,7 +2,7 @@ const PATCHNOTE_DATA = `
 <div class="patchnote-container">
     <h3>🚀 [v3.2.1]</h3>
     <ul>
-        <li>정신계 2023, 2024 족보 추가</li>
+        <li>정신계 2023, 2024, 2025 족보 추가</li>
         <li>Enter 버튼으로 로그인 가능</li>
     </ul>
     <hr>
