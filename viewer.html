@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원본 족보 뷰어</title>
+    <!-- PDF.js 라이브러리 로드 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 20px 0;
+            background-color: #525659; /* 정통 PDF 뷰어 배경색 */
+            display: flex; flex-direction: column; align-items: center;
+        }
+        #pdf-container {
+            width: 100%; max-width: 900px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+        canvas {
+            max-width: 95%; height: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background-color: white; border-radius: 4px;
+        }
+        #loading-msg { color: white; font-family: sans-serif; font-size: 1.2rem; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="loading-msg">PDF 페이지를 불러오는 중입니다...</div>
+    <div id="pdf-container"></div>
+
+    <script>
+        // URL에서 파일 경로 및 페이지 구간 파라미터 추출
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileUrl = urlParams.get('file');
+        const startPage = parseInt(urlParams.get('start'), 10) || 1;
+        const endPage = parseInt(urlParams.get('end'), 10) || startPage;
+
+        const container = document.getElementById('pdf-container');
+        const loadingMsg = document.getElementById('loading-msg');
+
+        if (!fileUrl) {
+            loadingMsg.textContent = "파일 경로가 잘못되었습니다.";
+        } else {
+            // PDF.js 워커 경로 설정
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+            // PDF 문서 부분 로드 (서버가 Byte-Range를 지원하면 필요한 청크만 다운로드됨)
+            const loadingTask = pdfjsLib.getDocument(fileUrl);
+            loadingTask.promise.then(async (pdf) => {
+                loadingMsg.style.display = 'none';
+
+                // 시작 페이지부터 끝 페이지까지 순차적으로 캔버스에 렌더링
+                for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+                    if (pageNum > pdf.numPages) break; // 문서 전체 페이지 수를 초과하면 중단
+
+                    const page = await pdf.getPage(pageNum);
+                    // 태블릿/PC 고화질 대응을 위해 스케일을 1.5배로 설정
+                    const viewport = page.getViewport({ scale: 1.5 });
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    container.appendChild(canvas);
+
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+                    await page.render(renderContext).promise;
+                }
+            }).catch(err => {
+                console.error("PDF 로딩 오류:", err);
+                loadingMsg.textContent = "PDF 파일을 로드하는 중 오류가 발생했습니다.";
+            });
+        }
+    </script>
+</body>
+</html>

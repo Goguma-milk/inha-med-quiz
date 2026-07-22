@@ -618,11 +618,23 @@ function renderQuestion() {
     if (dom.btnPalette) dom.btnPalette.textContent = `${currentQuestionIndex + 1}/${currentFilteredQuestions.length}`;
 
     // [v3.1 수정] 단일 모드 원본 PDF 팝업 로직 (page_number 변수 적용)
-// [v3.2 수정] 팝업 창 재사용 및 페이지 강제 이동 버그 해결 (더미 쿼리 추가)
+
+// [v3.4 수정] 커스텀 PDF 뷰어 호출 및 구간(Start~End) 파라미터 유동적 계산
     const btnPdf = document.getElementById('btn-view-pdf');
     if (btnPdf) {
         btnPdf.onclick = () => {
-            const pdfUrl = `./족보원본/${q.originYear}_${q.originSubject}.pdf?reload=${Date.now()}#page=${q.page_number || 1}`;
+            const startPage = q.page_number || 1;
+            let endPage = startPage;
+            
+            // explanation 배열 내부의 page 값을 순회하여 가장 마지막 페이지(최댓값) 찾기
+            if (q.explanation && q.explanation.length > 0) {
+                const expPages = q.explanation.map(exp => exp.page).filter(p => p != null);
+                if (expPages.length > 0) {
+                    endPage = Math.max(startPage, ...expPages);
+                }
+            }
+            
+            const pdfUrl = `viewer.html?file=${encodeURIComponent(`./족보원본/${q.originYear}_${q.originSubject}.pdf`)}&start=${startPage}&end=${endPage}`;
             window.open(pdfUrl, 'PDFViewerWindow', 'width=800,height=1000');
         };
     }
@@ -1498,13 +1510,25 @@ function setupEventListeners() {
             }
 
             // [v3.1 수정] 다중 관전 모드 원본 PDF 팝업 이벤트 (page_number 변수 적용)
-// [v3.2 수정] 팝업 창 재사용 및 페이지 강제 이동 버그 해결 (더미 쿼리 추가)
+
+// [v3.4 수정] 커스텀 PDF 뷰어 호출 및 구간(Start~End) 파라미터 유동적 계산
             const btnViewPdf = e.target.closest('.btn-view-pdf-slot');
             if (btnViewPdf) {
                 const slotIndex = parseInt(btnViewPdf.dataset.slot);
                 const targetQ = currentFilteredQuestions[currentSlotIndices[slotIndex]];
                 if (targetQ) {
-                    const pdfUrl = `./족보원본/${targetQ.originYear}_${targetQ.originSubject}.pdf?reload=${Date.now()}#page=${targetQ.page_number || 1}`;
+                    const startPage = targetQ.page_number || 1;
+                    let endPage = startPage;
+                    
+                    // explanation 배열 내부의 page 값을 순회하여 가장 마지막 페이지 찾기
+                    if (targetQ.explanation && targetQ.explanation.length > 0) {
+                        const expPages = targetQ.explanation.map(exp => exp.page).filter(p => p != null);
+                        if (expPages.length > 0) {
+                            endPage = Math.max(startPage, ...expPages);
+                        }
+                    }
+                    
+                    const pdfUrl = `viewer.html?file=${encodeURIComponent(`./족보원본/${targetQ.originYear}_${targetQ.originSubject}.pdf`)}&start=${startPage}&end=${endPage}`;
                     window.open(pdfUrl, 'PDFViewerWindow', 'width=800,height=1000');
                 }
                 return;

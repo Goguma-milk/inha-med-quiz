@@ -1,6 +1,12 @@
 const PATCHNOTE_DATA = `
 <div class="patchnote-container">
-    <h3>✨ [v3.3.1]</h3>
+    <h3>⚡ [v3.4]</h3>
+    <ul>
+        <li>커스텀 PDF 뷰어(PDF.js) 탑재 및 부분 로딩 적용 (로딩 지연 해결)</li>
+    </ul>
+    <hr>
+
+    <h3>[v3.3.1]</h3>
     <ul>
         <li>정신계 2025 일부 문항 정답, 출제자, 출제범위 정보 추가 (내 마음대로 단거라 틀릴수도 있음, 향후에도 추가 예정)</li>
     </ul>
@@ -13,7 +19,7 @@ const PATCHNOTE_DATA = `
     </ul>
     <hr>
 
-    <h3>🚀 [v3.2.1]</h3>
+    <h3>[v3.2.1]</h3>
     <ul>
         <li>정신계 2023, 2024, 2025 족보 추가</li>
         <li>Enter 버튼으로 로그인 가능</li>
