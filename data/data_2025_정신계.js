@@ -2003,7 +2003,7 @@ var data_2025_정신계 = {
         "question_image_path": [
           "images/2025_정신계/q88_question_0.png"
         ],
-        "question_image_page": 업데이트 예정
+        "question_image_page": "업데이트 예정"
       }
     },
     {
