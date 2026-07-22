@@ -1381,11 +1381,40 @@ function setupEventListeners() {
         });
     }
 
+// [v3.3 수정] 리사이저 터치 및 마우스 드래그 이벤트 통합 지원
     let isDragging = false;
     if (dom.paneResizer) {
-        dom.paneResizer.onmousedown = () => { isDragging = true; document.body.style.userSelect = 'none'; dom.paneResizer.classList.add('dragging'); };
-        document.addEventListener('mousemove', (e) => { if (!isDragging || !dom.quizSplitContainer || !dom.leftPane) return; dom.leftPane.style.width = `${Math.max(20, Math.min(80, (e.clientX / dom.quizSplitContainer.offsetWidth) * 100))}%`; });
-        document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; document.body.style.userSelect = ''; dom.paneResizer?.classList.remove('dragging'); } });
+        const startResize = () => {
+            isDragging = true;
+            document.body.style.userSelect = 'none';
+            dom.paneResizer.classList.add('dragging');
+        };
+
+        const performResize = (clientX) => {
+            if (!isDragging || !dom.quizSplitContainer || !dom.leftPane) return;
+            dom.leftPane.style.width = `${Math.max(20, Math.min(80, (clientX / dom.quizSplitContainer.offsetWidth) * 100))}%`;
+        };
+
+        const stopResize = () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.userSelect = '';
+                dom.paneResizer?.classList.remove('dragging');
+            }
+        };
+
+        // 데스크탑 마우스 이벤트
+        dom.paneResizer.onmousedown = startResize;
+        document.addEventListener('mousemove', (e) => performResize(e.clientX));
+        document.addEventListener('mouseup', stopResize);
+
+        // 태블릿/모바일 터치 이벤트
+        dom.paneResizer.addEventListener('touchstart', startResize, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging) e.preventDefault(); // 스크롤 간섭 방지
+            performResize(e.touches[0].clientX);
+        }, { passive: false });
+        document.addEventListener('touchend', stopResize);
     }
 
     document.addEventListener('keydown', (e) => {

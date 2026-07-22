@@ -24,7 +24,8 @@
 
 /* --- Base & Reset --- */
 * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; position: relative; }
+/* [v3.3 수정] 동적 뷰포트 높이(100dvh) 지원 및 스크롤 차단 유지 */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-main); color: var(--text-main); height: 100vh; height: 100dvh; overflow: hidden; position: relative; }
 #app { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
 /* --- Utility Classes --- */
@@ -354,3 +355,14 @@ input:checked + .slider:before { transform: translateX(24px); }
 
 .modal-body-scroll { max-height: 60vh; overflow-y: auto; line-height: 1.6; font-size: 0.95rem; }
 .modal-body-scroll img { max-width: 100%; border-radius: 8px; margin: 1rem 0; border: 1px solid var(--border); }
+
+/* [v3.3 추가] 태블릿 환경(1024px 이하) 반응형 UI 최적화 */
+@media (max-width: 1024px) {
+    .quiz-header { padding: 0.5rem 1rem; }
+    .bottom-nav { padding: 0.5rem 1rem; }
+    .left-pane, .right-pane { padding: 1rem; }
+    .question-text, .explanation-text { margin-bottom: 1rem; }
+    .btn-large { padding: 0.85rem; font-size: 1.1rem; }
+    .multi-question-card { padding: 1rem; }
+    .split-container { flex-direction: row; }
+}
